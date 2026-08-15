@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e293b">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Construcciones MC">
+    <link rel="apple-touch-icon" href="logo.jpg.jpeg">
+    
+    <link rel="manifest" href="manifest.json">
+    <title>Construcciones MC - Gestión</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        /* VARIABLES DE MARCA BLANCA */
+        :root { 
+            --fondo: #f1f5f9; 
+            --texto: #334155; 
+            --primario: #0f172a; 
+            --acento: #0284c7; 
+            --verde: #16a34a; 
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--fondo); color: var(--texto); padding-bottom: 70px; }
+
+        header { background-color: var(--primario); color: white; padding: 12px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+        header img { width: 45px; height: 45px; border-radius: 8px; object-fit: contain; background: white; padding: 2px; }
+        header span { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.5px; }
+
+        .pantalla { display: none; padding: 20px; animation: aparecer 0.3s ease-in-out; }
+        .pantalla.activa { display: block; }
+        @keyframes aparecer { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { margin: 20px 0 10px 0; color: var(--primario); border-bottom: 2px solid var(--acento); padding-bottom: 5px; display: inline-block; font-size: 1.3rem; }
+        .tarjeta { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        .input-form { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; }
+        .fila-item { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 5px; margin-bottom: 5px; align-items: center; background-color: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .fila-item input { margin-bottom: 0; padding: 8px; }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .btn-principal { background-color: var(--primario); color: white; padding: 12px; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+        .btn-secundario { background-color: var(--acento); color: white; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
+        .btn-eliminar { background-color: #ef4444; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; height: 100%; }
+        .total-box { font-size: 1.2rem; font-weight: bold; text-align: right; padding: 10px 0; color: var(--primario); }
+
+        .acciones-presupuesto { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .btn-accion { flex: 1; padding: 8px; border: none; border-radius: 4px; font-size: 0.85rem; font-weight: bold; color: white; cursor: pointer; text-align: center; min-width: 45%; }
+        .btn-img { background-color: var(--acento); }
+        .btn-borrar { background-color: #dc2626; }
+        .btn-verde { background-color: var(--verde); }
+        .btn-azul { background-color: #2563eb; }
+
+        .nav-inferior { position: fixed; bottom: 0; width: 100%; background-color: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100; }
+        .nav-btn { background: none; border: none; color: #94a3b8; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; width: 25%; }
+        .nav-btn.activo { color: var(--acento); font-weight: bold; }
+        .icono { font-size: 1.5rem; margin-bottom: 4px; }
+
+        /* ESTADÍSTICAS CAJA */
+        .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 3px solid var(--acento); }
+        .stat-box h4 { color: #64748b; font-size: 0.75rem; margin-bottom: 5px; text-transform: uppercase;}
+        .stat-box p { font-size: 1.3rem; font-weight: bold; color: var(--primario); }
+        .stat-full { grid-column: span 2; border-top: 3px solid var(--verde); background-color: #f0fdf4; }
+        .btn-reset { background: none; border: none; color: #94a3b8; font-size: 0.8rem; text-decoration: underline; cursor: pointer; display: block; margin: 0 auto 15px auto; }
+
+        /* ESTILOS DE LA AGENDA */
+        .agenda-card { display: flex; background: white; border-radius: 8px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;}
+        .agenda-fecha { background-color: var(--primario); color: white; padding: 15px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 80px; }
+        .agenda-fecha .dia { font-size: 2rem; font-weight: bold; line-height: 1; }
+        .agenda-fecha .mes { font-size: 0.9rem; text-transform: uppercase; margin-top: 5px; }
+        .agenda-datos { padding: 10px 15px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;}
+        .agenda-datos h3 { margin-bottom: 5px; font-size: 1.1rem; color: var(--primario); }
+        .agenda-datos p { font-size: 0.85rem; color: #64748b; margin-bottom: 3px; }
+        .btn-listo { background-color: var(--verde); color: white; border: none; border-radius: 4px; padding: 5px 10px; font-weight: bold; cursor: pointer; align-self: flex-start; margin-top: 8px;}
+
+        /* HISTORIAL EMPLEADOS */
+        .historial-box { max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px; margin-bottom: 10px; background-color: #f8fafc; }
+        .historial-item { display: flex; justify-content: space-between; align-items: center; padding: 5px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; color: var(--texto); }
+        .historial-item:last-child { border-bottom: none; }
+        .btn-borrar-min { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1rem; padding: 0 5px; }
+        .btn-editar { background: none; border: none; cursor: pointer; font-size: 1.1rem; margin-left: 5px; }
+
+        /* MEDIDAS DE OBRA */
+        .img-preview { width: 100%; max-height: 250px; object-fit: contain; border-radius: 6px; margin-bottom: 10px; border: 1px solid #ddd; }
+        .fila-medida { display: grid; grid-template-columns: 2fr 1fr auto; gap: 5px; margin-bottom: 5px; align-items: center; }
+
+        /* PLANTILLAS EXPORT (OCULTAS) */
+        .plantilla-export { display: none; padding: 20px; font-family: Arial, sans-serif; color: black; background: white; width: 800px; }
+        .pdf-borde { border: 2px solid black; padding: 2px; }
+        .pdf-header { display: flex; justify-content: space-between; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 10px; }
+        .pdf-logo-titulo { display: flex; align-items: center; gap: 15px; }
+        .pdf-logo-titulo img { width: 80px; height: 80px; object-fit: contain; }
+        .pdf-fechas { display: flex; flex-direction: column; align-items: center; }
+        .pdf-cuadros-fecha { display: flex; margin-top: 5px; }
+        .pdf-cuadros-fecha div { border: 2px solid black; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; margin-left: -2px; font-weight: bold; }
+        .pdf-info-empresa { text-align: center; font-size: 14px; margin-bottom: 10px; font-weight: bold; }
+        .pdf-cliente-info { border-top: 2px solid black; border-bottom: 2px solid black; padding: 10px 5px; margin-bottom: 0; font-size: 16px; }
+        .pdf-tabla { width: 100%; border-collapse: collapse; text-align: left; }
+        .pdf-tabla th, .pdf-tabla td { border: 2px solid black; padding: 8px; font-size: 15px; }
+        .pdf-tabla th { text-align: center; background-color: #f0f0f0; }
+        .pdf-tabla td:nth-child(1), .pdf-tabla td:nth-child(3), .pdf-tabla td:nth-child(4) { text-align: center; }
+        .pdf-footer { display: flex; justify-content: flex-end; border-top: 2px solid black; margin-top: 0; }
+        .pdf-footer-total { display: flex; padding: 0; }
+        .pdf-footer-total span { padding: 10px; font-size: 20px; font-weight: bold; }
+        .pdf-footer-total-num { border-left: 2px solid black; width: 150px; text-align: right; padding: 10px; font-size: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="logo.jpg.jpeg" alt="Logo Empresa">
+        <span>Construcciones MC</span>
+    </header>
+
+    <!-- PANTALLA 1: INICIO (CAJA, AGENDA Y MEDIDAS) -->
+    <main id="panel-dashboard" class="pantalla activa">
+        <h2>Caja de la Empresa</h2>
+        <div class="grid-stats">
+            <div class="stat-box" style="border-top-color: var(--verde);">
+                <h4>Ingresos por Obras</h4>
+                <p id="stat-ingresos" style="color: var(--verde);">$0</p>
+            </div>
+            <div class="stat-box" style="border-top-color: #dc2626;">
+                <h4>Gastos Totales</h4>
+                <p id="stat-gastos" style="color: #dc2626;">$0</p>
+            </div>
+            <div class="stat-box stat-full">
+                <h4>En billetera <button class="btn-editar" onclick="window.editarMonedero()">✏️</button></h4>
+                <p id="stat-monedero" style="font-size: 1.6rem;">$0</p>
+            </div>
+        </div>
+        
+        <button class="btn-principal" style="background-color: var(--verde); margin-top: 0; margin-bottom: 10px;" onclick="window.ingresoManual()">+ Ingreso de Dinero</button>
+        <button class="btn-reset" onclick="window.reiniciarCaja()">🔄 Reiniciar caja a cero</button>
+
+        <h2>Agenda de Obras</h2>
+        <div class="tarjeta" style="background-color: #f8fafc; border: 1px dashed #cbd5e1;">
+            <input type="text" id="ag-tarea" class="input-form" placeholder="Trabajo (Ej: Visita de obra)">
+            <input type="text" id="ag-direccion" class="input-form" placeholder="Dirección">
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="ag-costo" class="input-form" placeholder="Costo / Seña ($)">
+                <input type="date" id="ag-fecha" class="input-form">
+            </div>
+            <button class="btn-principal" onclick="window.guardarAgenda()">Agendar Trabajo</button>
+        </div>
+        <div id="lista-agenda"></div>
+
+        <h2>Relevamiento de Obras</h2>
+        <div class="tarjeta">
+            <input type="text" id="m-cliente" class="input-form" placeholder="Nombre Cliente / Obra">
+            <input type="file" id="m-foto" accept="image/*" capture="environment" class="input-form" onchange="window.previsualizarFoto(this)">
+            <img id="m-preview" class="img-preview" style="display:none">
+            
+            <div id="m-lista-medidas"></div>
+            <button class="btn-secundario" style="margin-top: 10px;" onclick="window.agregarFilaMedida()">+ Agregar Medida</button>
+            
+            <textarea id="m-notas" class="input-form" placeholder="Anotaciones técnicas de la obra"></textarea>
+            <button class="btn-principal" onclick="window.guardarMedida()">Guardar Relevamiento</button>
+        </div>
+        <div id="lista-medidas-guardadas"></div>
+    </main>
+
+    <!-- PANTALLA 2: COTIZACIONES -->
+    <main id="panel-cotizaciones" class="pantalla">
+        <h2>Crear Presupuesto</h2>
+        <div class="tarjeta">
+            <input type="text" id="p-cliente" class="input-form" placeholder="Nombre del cliente (Señor/es)">
+            <input type="text" id="p-direccion" class="input-form" placeholder="Dirección de la obra">
+            <hr style="margin: 15px 0; border: 0.5px solid #cbd5e1;">
+            <h3 style="font-size: 1rem;">Detalle de Trabajos y Materiales</h3>
+            <div id="contenedor-items"></div>
+            <button class="btn-secundario" onclick="window.agregarFilaItem()">+ Agregar Ítem</button>
+            <div class="total-box">Total: $<span id="suma-total-pantalla">0</span></div>
+            <button class="btn-principal" onclick="window.guardarPresupuesto()" id="btn-guardar">Guardar Presupuesto</button>
+        </div>
+
+        <h2 style="margin-top: 10px;">Presupuestos en espera</h2>
+        <div id="lista-presupuestos"><div class="tarjeta"><p style="text-align: center;">Cargando...</p></div></div>
+    </main>
+
+    <!-- PANTALLA 3: EMPLEADOS -->
+    <main id="panel-empleados" class="pantalla">
+        <h2>Personal de Construcción</h2>
+        <button class="btn-secundario" onclick="window.crearEmpleado()" style="width: 100%; margin-bottom: 10px;">+ Agregar Personal</button>
+        <div id="lista-empleados"><div class="tarjeta"><p style="text-align: center;">Cargando empleados...</p></div></div>
+    </main>
+
+    <!-- PANTALLA 4: VEHÍCULO -->
+    <main id="panel-vehiculo" class="pantalla">
+        <h2>Control Flota y Fletes</h2>
+        <div id="alerta-aceite" class="tarjeta" style="display:none; background-color: #fef2f2; border: 1px solid #ef4444; color: #b91c1c; text-align: center; font-weight: bold;">
+            ⚠️ ¡Atención! Algún vehículo está cerca de los 10.000 km desde el último cambio de aceite/filtros.
+        </div>
+        
+        <div class="tarjeta">
+            <select id="v-entidad" class="input-form" onchange="window.cambiarEntidadVehiculo()">
+                <option value="">Seleccionar Vehículo / Flete...</option>
+                <!-- Opciones cargadas desde BD -->
+            </select>
+
+            <select id="v-tipo" class="input-form" onchange="window.cambiarTipoGastoVehiculo()" style="display:none;">
+                <option value="combustible">⛽ Carga de Combustible</option>
+                <option value="repuesto">🔧 Repuesto / Taller</option>
+            </select>
+
+            <input type="text" id="v-detalle" class="input-form" placeholder="Detalle" style="display: none;">
+            
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="v-costo" class="input-form" placeholder="Costo Total ($)" style="display: none;">
+                <input type="number" id="v-km" class="input-form" placeholder="Kilometraje Actual" style="display: none;">
+            </div>
+            
+            <button class="btn-principal" onclick="window.guardarGastoVehiculo()">Guardar Gasto</button>
+        </div>
+        
+        <h2 style="margin-top: 10px;">Historial de Gastos</h2>
+        <div id="lista-vehiculo"><div class="tarjeta"><p style="text-align: center;">Cargando historial...</p></div></div>
+    </main>
+
+    <!-- MENU INFERIOR -->
+    <nav class="nav-inferior">
+        <button class="nav-btn activa" onclick="window.cambiarPantalla('panel-dashboard', this)"><span class="icono">📊</span><span>Inicio</span></button>
+        <button class="nav-btn" onclick="window.cambiarPantalla('panel-cotizaciones', this)"><span class="icono">📝</span><span>Cotizar</span></button>
+        <button class="nav-btn" onclick="window.cambiarPantalla('panel-empleados', this)"><span class="icono">👷</span><span>Personal</span></button>
+        <button class="nav-btn" onclick="window.cambiarPantalla('panel-vehiculo', this)"><span class="icono">🚚</span><span>Flota</span></button>
+    </nav>
+
+    <!-- PLANTILLA OCULTA: PRESUPUESTO -->
+    <div id="plantilla-presupuesto" class="plantilla-export">
+        <div class="pdf-borde">
+            <div class="pdf-header">
+                <div class="pdf-logo-titulo">
+                    <img src="logo.jpg.jpeg" alt="Logo Empresa">
+                    <div><h1 style="margin:0; font-size: 28px;">CONSTRUCCIONES MC</h1></div>
+                </div>
+                <div class="pdf-fechas">
+                    <div style="font-weight: bold; font-size: 18px;">PRESUPUESTO</div>
+                    <div style="font-size: 12px;">Fecha</div>
+                    <div class="pdf-cuadros-fecha">
+                        <div id="pdf-dia"></div><div id="pdf-mes"></div><div id="pdf-anio"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="pdf-info-empresa">
+                Obras, Reformas y Mantenimiento Integral<br>
+                Cel / WhatsApp: 096103551 | Email: construccionesmc@proton.me | Salto, Uruguay
+            </div>
+            <div class="pdf-cliente-info">
+                <strong>Señor/es:</strong> <span id="pdf-cliente"></span><br><br>
+                <strong>Dirección:</strong> <span id="pdf-direccion"></span>
+            </div>
+            <table class="pdf-tabla">
+                <thead><tr><th style="width: 10%;">CANT.</th><th style="width: 50%;">DETALLE</th><th style="width: 20%;">P. UNIT.</th><th style="width: 20%;">IMPORTE</th></tr></thead>
+                <tbody id="pdf-tbody-items"></tbody>
+            </table>
+            <div class="pdf-footer">
+                <div class="pdf-footer-total"><span>TOTAL $</span><div class="pdf-footer-total-num" id="pdf-total">0</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLANTILLA OCULTA: RECIBO DE SUELDO -->
+    <div id="plantilla-recibo" class="plantilla-export">
+        <div class="pdf-borde">
+            <div class="pdf-header">
+                <div class="pdf-logo-titulo">
+                    <img src="logo.jpg.jpeg" alt="Logo Empresa">
+                    <div><h1 style="margin:0; font-size: 28px;">CONSTRUCCIONES MC</h1></div>
+                </div>
+                <div class="pdf-fechas">
+                    <div style="font-weight: bold; font-size: 18px;">RECIBO DE PAGO</div>
+                    <div style="font-size: 12px;">Fecha de Liquidación</div>
+                    <div class="pdf-cuadros-fecha">
+                        <div id="recibo-dia"></div><div id="recibo-mes"></div><div id="recibo-anio"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="pdf-cliente-info">
+                <strong>Empleado:</strong> <span id="recibo-empleado"></span><br><br>
+                <strong>Valor Hora:</strong> $<span id="recibo-valor-hora"></span>
+            </div>
+            <table class="pdf-tabla">
+                <thead><tr><th style="width: 70%;">CONCEPTO</th><th style="width: 30%;">IMPORTE</th></tr></thead>
+                <tbody id="recibo-tbody-items"></tbody>
+            </table>
+            <div class="pdf-footer">
+                <div class="pdf-footer-total"><span>LIQUIDO A PAGAR $</span><div class="pdf-footer-total-num" id="recibo-total">0</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLANTILLA OCULTA: MEDIDAS DE OBRA -->
+    <div id="plantilla-medidas" class="plantilla-export">
+        <div class="pdf-borde">
+            <div class="pdf-header">
+                <div class="pdf-logo-titulo">
+                    <img src="logo.jpg.jpeg" alt="Logo Empresa">
+                    <div><h1 style="margin:0; font-size: 28px;">CONSTRUCCIONES MC</h1></div>
+                </div>
+                <div class="pdf-fechas">
+                    <div style="font-weight: bold; font-size: 18px;">RELEVAMIENTO</div>
+                    <div style="font-size: 12px;">Fecha</div>
+                    <div class="pdf-cuadros-fecha">
+                        <div id="med-dia"></div><div id="med-mes"></div><div id="med-anio"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="pdf-cliente-info">
+                <strong>Cliente / Obra:</strong> <span id="med-cliente"></span>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 15px;">
+                <div style="flex: 1;">
+                    <img id="med-foto" style="width: 100%; max-height: 400px; object-fit: contain; border: 2px solid black;">
+                </div>
+                <div style="flex: 1;">
+                    <table class="pdf-tabla">
+                        <thead><tr><th>DETALLE</th><th>MEDIDA</th></tr></thead>
+                        <tbody id="med-tbody-items"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div style="margin-top: 15px; border: 2px solid black; padding: 10px;">
+                <strong>Anotaciones Técnicas:</strong><br>
+                <span id="med-notas"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LÓGICA DE FIREBASE Y LA APLICACIÓN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, setDoc, getDoc, arrayUnion } 
+        from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+        // CONFIGURACIÓN DE CONSTRUCCIONES MC
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2Wo6JCgG6k3QVAW5or1blpuBZVofwqLY",
+            authDomain: "constucciones-mc.firebaseapp.com",
+            projectId: "constucciones-mc",
+            storageBucket: "constucciones-mc.firebasestorage.app",
+            messagingSenderId: "654232581864",
+            appId: "1:654232581864:web:f529104d02acd47732bb5d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.presupuestosNube = [];
+        window.empleadosNube = [];
+        window.itemsActuales = [];
+        window.medidasNube = [];
+
+        // --- SISTEMA EN TIEMPO REAL: CAJA (MONEDERO) ---
+        const cajaRef = doc(db, "caja", "resumen");
+        onSnapshot(cajaRef, (docSnap) => {
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                document.getElementById('stat-ingresos').innerText = `$${data.ingresos || 0}`;
+                document.getElementById('stat-gastos').innerText = `$${data.gastos || 0}`;
+                document.getElementById('stat-monedero').innerText = `$${data.monedero || 0}`;
+            } else {
+                setDoc(cajaRef, { ingresos: 0, gastos: 0, monedero: 0 });
+            }
+        });
+
+        window.actualizarCaja = async function(tipo, monto) {
+            const snap = await getDoc(cajaRef);
+            if(snap.exists()) {
+                let d = snap.data();
+                if(tipo === 'ingreso') {
+                    await updateDoc(cajaRef, { ingresos: (d.ingresos || 0) + monto, monedero: (d.monedero || 0) + monto });
+                } else if(tipo === 'gasto') {
+                    await updateDoc(cajaRef, { gastos: (d.gastos || 0) + monto, monedero: (d.monedero || 0) - monto });
+                }
+            }
+        };
+
+        window.ingresoManual = async function() {
+            let monto = parseFloat(prompt("¿Cuánta plata ingresó a la caja?"));
+            if(!monto || isNaN(monto)) return;
+            let detalle = prompt("¿Por qué concepto? (Ej: Seña obra)");
+            await window.actualizarCaja('ingreso', monto);
+            alert(`Se sumaron $${monto} al monedero.`);
+        };
+
+        window.editarMonedero = async function() {
+            const snap = await getDoc(cajaRef);
+            if(snap.exists()) {
+                let actual = snap.data().monedero || 0;
+                let nuevo = parseFloat(prompt(`Saldo actual calculado: $${actual}\n\nIngresá la plata real que tenés en la caja/bolsillo para hacer el ajuste:`, actual));
+                if(nuevo !== null && !isNaN(nuevo)) {
+                    await updateDoc(cajaRef, { monedero: nuevo });
+                }
+            }
+        };
+
+        window.reiniciarCaja = async function() {
+            if(confirm("¿Estás seguro de reiniciar los contadores de la caja a cero? (Esto es ideal a principio de mes)")) {
+                await updateDoc(cajaRef, { ingresos: 0, gastos: 0, monedero: 0 });
+            }
+        };
+
+        // --- SISTEMA EN TIEMPO REAL: AGENDA ---
+        const qAgenda = query(collection(db, "agenda"), orderBy("fecha_iso", "asc"));
+        onSnapshot(qAgenda, (snapshot) => {
+            let lista = document.getElementById('lista-agenda');
+            lista.innerHTML = '';
+            if(snapshot.empty) { lista.innerHTML = '<p style="text-align: center; color: #64748b; margin-top: 20px;">No hay tareas agendadas.</p>'; return; }
+
+            const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+            snapshot.forEach((docSnap) => {
+                let a = docSnap.data(); a.docId = docSnap.id;
+                let partesFecha = a.fecha_iso.split('-'); 
+                let dia = partesFecha[2];
+                let mesStr = meses[parseInt(partesFecha[1]) - 1];
+
+                let div = document.createElement('div'); div.className = 'agenda-card';
+                div.innerHTML = `
+                    <div class="agenda-fecha">
+                        <span class="dia">${dia}</span>
+                        <span class="mes">${mesStr}</span>
+                    </div>
+                    <div class="agenda-datos">
+                        <div>
+                            <h3>${a.tarea}</h3>
+                            <p>📍 ${a.direccion}</p>
+                            <p>💰 Costo/Seña: $${a.costo}</p>
+                        </div>
+                        <button class="btn-listo" onclick="window.borrarDoc('${a.docId}', 'agenda')">✔ Listo</button>
+                    </div>
+                `;
+                lista.appendChild(div);
+            });
+        });
+
+        // --- SISTEMA EN TIEMPO REAL: MEDIDAS DE OBRA (CON COMPRESOR) ---
+        window.fotoBase64 = "";
+        window.previsualizarFoto = function(input) {
+            if (!input.files[0]) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement("canvas");
+                    const MAX_WIDTH = 1000;
+                    const MAX_HEIGHT = 1000;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    window.fotoBase64 = canvas.toDataURL("image/jpeg", 0.7);
+                    
+                    document.getElementById('m-preview').src = window.fotoBase64;
+                    document.getElementById('m-preview').style.display = 'block';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.agregarFilaMedida = function() {
+            const div = document.createElement('div');
+            div.className = 'fila-medida';
+            div.innerHTML = `
+                <input type="text" class="input-form" placeholder="Detalle (Ej: Ancho)" style="margin-bottom:0;">
+                <input type="text" class="input-form" placeholder="Medida" style="margin-bottom:0;">
+                <button class="btn-eliminar" onclick="this.parentElement.remove()">X</button>
+            `;
+            document.getElementById('m-lista-medidas').appendChild(div);
+        };
+
+        window.guardarMedida = async function() {
+            let cliente = document.getElementById('m-cliente').value;
+            if(!cliente || !window.fotoBase64) { alert("Completá el nombre del cliente/trabajo y tomá la foto."); return; }
+            
+            let medidas = [];
+            document.querySelectorAll('#m-lista-medidas .fila-medida').forEach(f => {
+                medidas.push({ detalle: f.children[0].value, valor: f.children[1].value });
+            });
+
+            let fObj = new Date();
+            await addDoc(collection(db, "medidas_obra"), {
+                cliente, foto: window.fotoBase64, medidas, 
+                notas: document.getElementById('m-notas').value, 
+                fecha: fObj.toLocaleDateString('es-UY'),
+                dia: String(fObj.getDate()).padStart(2, '0'),
+                mes: String(fObj.getMonth() + 1).padStart(2, '0'),
+                anio: String(fObj.getFullYear()).slice(-2)
+            });
+
+            document.getElementById('m-cliente').value = '';
+            document.getElementById('m-preview').style.display = 'none';
+            document.getElementById('m-foto').value = '';
+            document.getElementById('m-lista-medidas').innerHTML = '';
+            document.getElementById('m-notas').value = '';
+            window.fotoBase64 = "";
+            alert("Relevamiento guardado.");
+        };
+
+        onSnapshot(collection(db, "medidas_obra"), (snap) => {
+            window.medidasNube = [];
+            let lista = document.getElementById('lista-medidas-guardadas');
+            lista.innerHTML = '';
+            snap.forEach(doc => {
+                let d = doc.data(); d.docId = doc.id;
+                window.medidasNube.push(d);
+                let div = document.createElement('div'); div.className = 'tarjeta';
+                div.innerHTML = `
+                    <h3 style="margin-bottom: 5px;">${d.cliente} <span style="font-size: 0.8rem; color:#64748b;">(${d.fecha})</span></h3>
+                    <img src="${d.foto}" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-accion btn-img" onclick="window.generarImagenYCompartir('${d.docId}', 'medidas')">Generar Imagen</button>
+                        <button class="btn-accion btn-borrar" onclick="window.borrarDoc('${d.docId}', 'medidas_obra')">Eliminar</button>
+                    </div>
+                `;
+                lista.appendChild(div);
+            });
+        });
+
+        // --- SISTEMA EN TIEMPO REAL: VEHÍCULOS Y FLETES ---
+        onSnapshot(collection(db, "flota"), (snap) => {
+            let select = document.getElementById('v-entidad');
+            let opcionesHTML = `<option value="">Seleccionar Vehículo / Flete...</option>`;
+            snap.forEach(doc => {
+                opcionesHTML += `<option value="${doc.data().nombre}">🚗 ${doc.data().nombre}</option>`;
+            });
+            opcionesHTML += `<option value="flete">🚚 Flete a Terceros</option><option value="nuevo">➕ Agregar Nuevo Vehículo</option>`;
+            select.innerHTML = opcionesHTML;
+        });
+
+        window.cambiarEntidadVehiculo = async function() {
+            let val = document.getElementById('v-entidad').value;
+            let tipo = document.getElementById('v-tipo');
+            let det = document.getElementById('v-detalle');
+            let km = document.getElementById('v-km');
+            let costo = document.getElementById('v-costo');
+
+            if(val === 'nuevo') {
+                let nom = prompt("Nombre del nuevo vehículo (Ej: Camioneta Nissan):");
+                if(nom) { await addDoc(collection(db, "flota"), { nombre: nom }); }
+                document.getElementById('v-entidad').value = ""; 
+                return;
+            }
+
+            if(val === 'flete') {
+                tipo.style.display = 'none';
+                km.style.display = 'none';
+                det.style.display = 'block';
+                det.placeholder = "Destino / Detalle del Flete";
+                costo.style.display = 'block';
+            } else if (val !== "") {
+                tipo.style.display = 'block';
+                km.style.display = 'block';
+                costo.style.display = 'block';
+                window.cambiarTipoGastoVehiculo(); 
+            } else {
+                tipo.style.display = 'none'; km.style.display = 'none'; det.style.display = 'none'; costo.style.display = 'none';
+            }
+        };
+
+        window.cambiarTipoGastoVehiculo = function() {
+            let entidad = document.getElementById('v-entidad').value;
+            if(entidad === 'flete') return;
+            
+            let tipo = document.getElementById('v-tipo').value;
+            let detalleInput = document.getElementById('v-detalle');
+            if(tipo === 'repuesto') { 
+                detalleInput.style.display = 'block'; 
+                detalleInput.placeholder = "Detalle (Ej: Aceite, Frenos)";
+            } else { 
+                detalleInput.style.display = 'none'; detalleInput.value = ''; 
+            }
+        };
+
+        window.guardarGastoVehiculo = async function() {
+            let entidad = document.getElementById('v-entidad').value;
+            if(!entidad || entidad === 'nuevo') { alert("Seleccioná un vehículo o Flete."); return; }
+            
+            let tipo = document.getElementById('v-tipo').value;
+            let detalle = document.getElementById('v-detalle').value || '';
+            let costo = parseFloat(document.getElementById('v-costo').value);
+            let km = parseFloat(document.getElementById('v-km').value) || 0;
+
+            if(!costo) { alert("Completá el costo."); return; }
+            if(entidad === 'flete' && !detalle) { alert("Escribí el destino o detalle del flete."); return; }
+            if(entidad !== 'flete' && tipo === 'repuesto' && !detalle) { alert("Escribí qué repuesto o arreglo se hizo."); return; }
+            if(entidad !== 'flete' && !km) { alert("Completá el kilometraje actual del vehículo."); return; }
+
+            let fechaObj = new Date();
+            await addDoc(collection(db, "vehiculo"), {
+                id: Date.now(), 
+                entidad: entidad,
+                tipo: entidad === 'flete' ? 'flete' : tipo, 
+                detalle: detalle, 
+                monto: costo, 
+                km: km,
+                fecha: fechaObj.toLocaleDateString('es-UY'), mes: fechaObj.getMonth() + 1, anio: fechaObj.getFullYear()
+            });
+
+            await window.actualizarCaja('gasto', costo);
+
+            document.getElementById('v-costo').value = ''; document.getElementById('v-km').value = ''; document.getElementById('v-detalle').value = '';
+            alert("Gasto guardado y descontado de la caja correctamente.");
+        };
+
+        const qVehiculo = query(collection(db, "vehiculo"), orderBy("id", "desc"));
+        onSnapshot(qVehiculo, (snapshot) => {
+            let lista = document.getElementById('lista-vehiculo');
+            lista.innerHTML = '';
+            let maxKm = 0; let ultimoKmAceite = 0;
+
+            if(snapshot.empty) { lista.innerHTML = '<div class="tarjeta"><p style="text-align: center;">No hay gastos registrados.</p></div>'; }
+
+            snapshot.forEach((docSnap) => {
+                let v = docSnap.data(); v.docId = docSnap.id;
+                
+                if (v.km > maxKm) maxKm = v.km;
+                if (v.tipo === 'repuesto' && v.detalle.toLowerCase().includes('aceite')) {
+                    if (v.km > ultimoKmAceite) ultimoKmAceite = v.km;
+                }
+
+                let esFlete = (v.tipo === 'flete' || v.entidad === 'flete');
+                let icono = esFlete ? '🚚' : (v.tipo === 'combustible' ? '⛽' : '🔧');
+                let titulo = esFlete ? `Flete: ${v.detalle}` : `${v.entidad} - ${v.tipo === 'combustible' ? 'Combustible' : v.detalle}`;
+                let subtitulo = esFlete ? `${v.fecha}` : `${v.fecha} | KM: ${v.km}`;
+
+                let div = document.createElement('div'); div.className = 'tarjeta';
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h3 style="margin-bottom: 2px;">${icono} ${titulo}</h3>
+                            <p style="font-size: 0.85rem; color: #64748b;">${subtitulo}</p>
+                        </div>
+                        <p style="font-weight: bold; font-size: 1.1rem; color: #dc2626;">-$${v.monto}</p>
+                    </div>
+                    <button class="btn-borrar-min" style="margin-top: 10px;" onclick="window.borrarDoc('${v.docId}', 'vehiculo')">🗑️ Borrar registro</button>
+                `;
+                lista.appendChild(div);
+            });
+
+            if (ultimoKmAceite > 0 && (maxKm - ultimoKmAceite) >= 9000) {
+                document.getElementById('alerta-aceite').style.display = 'block';
+            } else {
+                document.getElementById('alerta-aceite').style.display = 'none';
+            }
+        });
+
+        // --- SISTEMA EN TIEMPO REAL: PRESUPUESTOS Y COBRANZAS ---
+        window.cobrarPresupuesto = async function(docId, totalStr) {
+            let monto = parseFloat(totalStr);
+            if(confirm(`¿Marcar este trabajo como COBRADO?\n\nSe sumarán $${monto} automáticamente a la Caja (Ingresos y Monedero).`)) {
+                await window.actualizarCaja('ingreso', monto);
+                await updateDoc(doc(db, "presupuestos", docId), { cobrado: true });
+                alert("Trabajo cobrado y dinero sumado a la caja.");
+            }
+        };
+
+        onSnapshot(query(collection(db, "presupuestos"), orderBy("id", "desc")), (snapshot) => {
+            window.presupuestosNube = [];
+            let lista = document.getElementById('lista-presupuestos');
+            lista.innerHTML = '';
+            if(snapshot.empty) { lista.innerHTML = '<div class="tarjeta"><p style="text-align: center;">No hay presupuestos.</p></div>'; return; }
+
+            snapshot.forEach((docSnap) => {
+                let p = docSnap.data(); p.docId = docSnap.id; window.presupuestosNube.push(p);
+                let div = document.createElement('div'); div.className = 'tarjeta';
+                
+                let btnCobro = p.cobrado ? 
+                    `<span style="width:100%; text-align:center; color:var(--verde); font-weight:bold; padding:8px;">✅ Trabajo Cobrado</span>` : 
+                    `<button class="btn-accion btn-verde" onclick="window.cobrarPresupuesto('${p.docId}', '${p.total}')">Cobrar</button>`;
+
+                div.innerHTML = `
+                    <h3 style="margin-bottom: 2px;">${p.cliente}</h3>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">${p.fecha} - ${p.direccion}</p>
+                    <p style="font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">Total: $${p.total}</p>
+                    <div class="acciones-presupuesto">
+                        ${btnCobro}
+                        <button class="btn-accion btn-img" onclick="window.generarImagenYCompartir('${p.docId}', 'presupuesto')">Generar Imagen</button>
+                        <button class="btn-accion btn-borrar" onclick="window.borrarDoc('${p.docId}', 'presupuestos')">Borrar</button>
+                    </div>
+                `;
+                lista.appendChild(div);
+            });
+        });
+
+        window.agregarFilaItem = function() {
+            const idFila = Date.now(); 
+            const div = document.createElement('div'); div.className = 'fila-item'; div.id = `fila-${idFila}`;
+            div.innerHTML = `<input type="text" class="input-form item-detalle" placeholder="Detalle" onchange="window.calcularTotales()"><input type="number" class="input-form item-cant" placeholder="Cant." min="1" value="1" oninput="window.calcularTotales()"><input type="number" class="input-form item-precio" placeholder="$ Unit." min="0" oninput="window.calcularTotales()"><button class="btn-eliminar" onclick="window.eliminarFila(${idFila})">X</button>`;
+            document.getElementById('contenedor-items').appendChild(div);
+        };
+        window.eliminarFila = function(id) { document.getElementById(`fila-${id}`).remove(); window.calcularTotales(); };
+        window.calcularTotales = function() {
+            window.itemsActuales = []; let t = 0;
+            document.querySelectorAll('.fila-item').forEach(f => {
+                let d = f.querySelector('.item-detalle').value, c = parseFloat(f.querySelector('.item-cant').value)||0, p = parseFloat(f.querySelector('.item-precio').value)||0;
+                let i = c * p; t += i;
+                if(d !== "" || i > 0) window.itemsActuales.push({ cant: c, detalle: d, precio: p, importe: i });
+            });
+            document.getElementById('suma-total-pantalla').innerText = t.toFixed(2);
+        };
+        window.guardarPresupuesto = async function() {
+            window.calcularTotales(); 
+            let cliente = document.getElementById('p-cliente').value, dir = document.getElementById('p-direccion').value, t = document.getElementById('suma-total-pantalla').innerText;
+            if(!cliente || window.itemsActuales.length === 0) { alert("Completá cliente e ítems."); return; }
+            document.getElementById('btn-guardar').disabled = true;
+            let f = new Date();
+            await addDoc(collection(db, "presupuestos"), { id: Date.now(), fecha: f.toLocaleDateString('es-UY'), dia: String(f.getDate()).padStart(2, '0'), mes: String(f.getMonth() + 1).padStart(2, '0'), anio: String(f.getFullYear()).slice(-2), cliente, direccion: dir, items: window.itemsActuales, total: t, cobrado: false });
+            document.getElementById('p-cliente').value = ''; document.getElementById('p-direccion').value = ''; document.getElementById('contenedor-items').innerHTML = ''; window.agregarFilaItem(); window.calcularTotales();
+            document.getElementById('btn-guardar').disabled = false; alert("Guardado!");
+        };
+        window.agregarFilaItem();
+
+        // --- SISTEMA EN TIEMPO REAL: EMPLEADOS ---
+        onSnapshot(collection(db, "empleados"), (snapshot) => {
+            window.empleadosNube = [];
+            let lista = document.getElementById('lista-empleados');
+            lista.innerHTML = '';
+
+            if(snapshot.empty) { lista.innerHTML = '<div class="tarjeta"><p style="text-align: center;">No hay empleados.</p></div>'; }
+
+            snapshot.forEach((docSnap) => {
+                let e = docSnap.data(); e.docId = docSnap.id; 
+                e.horas = e.horas || []; e.adelantos = e.adelantos || []; e.premios = e.premios || [];
+                window.empleadosNube.push(e);
+
+                let sumaHoras = e.horas.reduce((acc, h) => acc + h.cantidad, 0);
+                let plataHoras = sumaHoras * e.valorHora;
+                let sumaPremios = e.premios.reduce((acc, p) => acc + p.monto, 0);
+                let sumaAdelantos = e.adelantos.reduce((acc, a) => acc + a.monto, 0);
+                let saldoAPagar = (plataHoras + sumaPremios) - sumaAdelantos;
+
+                let movimientos = [];
+                e.horas.forEach(h => movimientos.push({...h, tipo: 'hora'}));
+                e.adelantos.forEach(a => movimientos.push({...a, tipo: 'adelanto'}));
+                e.premios.forEach(p => movimientos.push({...p, tipo: 'premio'}));
+                movimientos.sort((a,b) => a.id - b.id);
+
+                let htmlHistorial = movimientos.length === 0 ? '<div class="historial-item" style="color: #94a3b8; justify-content: center;">Sin movimientos en la cuenta</div>' : '';
+                movimientos.forEach(m => {
+                    let texto = m.tipo === 'hora' ? `⏱️ ${m.fecha}: ${m.cantidad} horas` : (m.tipo === 'adelanto' ? `💸 ${m.fecha}: Adelanto (-$${m.monto})` : `🎁 ${m.fecha}: Premio (+$${m.monto})`);
+                    htmlHistorial += `<div class="historial-item"><span>${texto}</span><button class="btn-borrar-min" onclick="window.borrarMovimiento('${e.docId}', '${m.tipo}', ${m.id})">❌</button></div>`;
+                });
+
+                let div = document.createElement('div'); div.className = 'tarjeta';
+                div.innerHTML = `
+                    <h3 style="margin-bottom: 2px; display: flex; align-items: center;">
+                        ${e.nombre} <button class="btn-editar" onclick="window.editarValorHora('${e.docId}')">✏️</button>
+                    </h3>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">Valor hora: $${e.valorHora} | Horas acumuladas: ${sumaHoras}h</p>
+                    <div class="historial-box">${htmlHistorial}</div>
+                    <p style="font-weight: bold; font-size: 1.3rem; margin-bottom: 10px; color: ${saldoAPagar < 0 ? '#dc2626' : 'var(--primario)'}">Saldo a Pagar: $${saldoAPagar}</p>
+                    <div class="acciones-presupuesto">
+                        <button class="btn-accion btn-azul" onclick="window.cargarHoras('${e.docId}')">⏱️ Horas</button>
+                        <button class="btn-accion btn-borrar" onclick="window.darAdelanto('${e.docId}')">💸 Adelanto</button>
+                        <button class="btn-accion btn-img" onclick="window.darPremio('${e.docId}')">🎁 Premio</button>
+                        <button class="btn-accion btn-verde" onclick="window.liquidarSueldo('${e.docId}')">✅ Liquidar</button>
+                    </div>
+                    <button class="btn-accion" style="background-color: #64748b; margin-top:10px; width: 100%;" onclick="window.borrarDoc('${e.docId}', 'empleados')">Eliminar Empleado</button>
+                `;
+                lista.appendChild(div);
+            });
+        });
+
+        window.crearEmpleado = async function() {
+            let nombre = prompt("Nombre del empleado:"); if(!nombre) return;
+            let valorHora = parseFloat(prompt("¿Cuánto cobra por hora?")); if(!valorHora) return;
+            await addDoc(collection(db, "empleados"), { nombre, valorHora, horas: [], adelantos: [], premios: [] });
+        };
+        window.editarValorHora = async function(docId) {
+            let e = window.empleadosNube.find(x => x.docId === docId); if(!e) return;
+            let val = parseFloat(prompt(`Nuevo valor hora:`, e.valorHora));
+            if(val) await updateDoc(doc(db, "empleados", docId), { valorHora: val });
+        };
+        window.cargarHoras = async function(docId) {
+            let h = parseFloat(prompt("Horas trabajadas:")); if(h) await updateDoc(doc(db, "empleados", docId), { horas: arrayUnion({ id: Date.now(), fecha: new Date().toLocaleDateString('es-UY'), cantidad: h }) });
+        };
+        window.darAdelanto = async function(docId) {
+            let m = parseFloat(prompt("Monto adelanto:")); if(m) await updateDoc(doc(db, "empleados", docId), { adelantos: arrayUnion({ id: Date.now(), fecha: new Date().toLocaleDateString('es-UY'), monto: m }) });
+        };
+        window.darPremio = async function(docId) {
+            let p = parseFloat(prompt("Monto premio:")); if(p) await updateDoc(doc(db, "empleados", docId), { premios: arrayUnion({ id: Date.now(), fecha: new Date().toLocaleDateString('es-UY'), monto: p }) });
+        };
+        window.borrarMovimiento = async function(docId, tipo, movId) {
+            if(!confirm("¿Borrar este registro?")) return;
+            let e = window.empleadosNube.find(x => x.docId === docId);
+            let campo = tipo === 'hora' ? 'horas' : (tipo === 'adelanto' ? 'adelantos' : 'premios');
+            await updateDoc(doc(db, "empleados", docId), { [campo]: e[campo].filter(x => x.id !== movId) });
+        };
+        window.liquidarSueldo = async function(docId) {
+            let e = window.empleadosNube.find(x => x.docId === docId); if(!e) return;
+            let sumaHoras = e.horas.reduce((acc, h) => acc + h.cantidad, 0);
+            let pHoras = sumaHoras * e.valorHora;
+            let sPremios = e.premios.reduce((acc, p) => acc + p.monto, 0);
+            let sAdelantos = e.adelantos.reduce((acc, a) => acc + a.monto, 0);
+            let saldo = (pHoras + sPremios) - sAdelantos;
+
+            if(confirm(`Liquidar $${saldo} a ${e.nombre}. Se abrirá el menú para compartir el recibo. ¿Continuar?`)) {
+                let f = new Date();
+                let datosPago = {
+                    empleadoId: e.docId, nombreEmpleado: e.nombre,
+                    fecha: f.toLocaleDateString('es-UY'), dia: String(f.getDate()).padStart(2, '0'),
+                    mes: f.getMonth() + 1, anio: f.getFullYear(),
+                    horasPagadas: sumaHoras, plataHoras: pHoras, premios: sPremios, adelantosDescontados: sAdelantos, totalPagado: saldo
+                };
+
+                let nuevoPago = await addDoc(collection(db, "pagos_salarios"), datosPago);
+                await window.actualizarCaja('gasto', saldo);
+                window.generarImagenYCompartir(nuevoPago.id, 'recibo', datosPago, e.valorHora); 
+                await updateDoc(doc(db, "empleados", docId), { horas: [], adelantos: [], premios: [] });
+            }
+        };
+
+        // --- COMUNES ---
+        window.borrarDoc = async function(docId, coleccion) {
+            if(confirm("¿Seguro querés borrar esto?")) await deleteDoc(doc(db, coleccion, docId));
+        };
+        window.cambiarPantalla = function(idPantalla, boton) {
+            document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+            document.getElementById(idPantalla).classList.add('activa');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('activo'));
+            boton.classList.add('activo');
+        };
+
+        // --- IOS FIX: GENERAR Y COMPARTIR IMAGEN ---
+        window.generarImagenYCompartir = function(docId, tipo, datosExtra = null, valorHora = 0) {
+            let elemento, nombreArchivo;
+
+            if(tipo === 'presupuesto') {
+                let p = window.presupuestosNube.find(p => p.docId === docId);
+                document.getElementById('pdf-cliente').innerText = p.cliente;
+                document.getElementById('pdf-direccion').innerText = p.direccion;
+                document.getElementById('pdf-dia').innerText = p.dia;
+                document.getElementById('pdf-mes').innerText = p.mes;
+                document.getElementById('pdf-anio').innerText = p.anio;
+                document.getElementById('pdf-total').innerText = p.total;
+                
+                const tbody = document.getElementById('pdf-tbody-items'); tbody.innerHTML = '';
+                p.items.forEach(item => { tbody.innerHTML += `<tr><td>${item.cant}</td><td>${item.detalle}</td><td>$${item.precio}</td><td>$${item.importe}</td></tr>`; });
+                for(let i=0; i < (10 - p.items.length); i++) { tbody.innerHTML += `<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>`; }
+
+                elemento = document.getElementById('plantilla-presupuesto');
+                nombreArchivo = 'Presupuesto_ConstruccionesMC_' + p.cliente.replace(/\s+/g, '_') + '.jpg';
+            } 
+            else if(tipo === 'recibo') {
+                let p = datosExtra; 
+                document.getElementById('recibo-empleado').innerText = p.nombreEmpleado;
+                document.getElementById('recibo-valor-hora').innerText = valorHora;
+                document.getElementById('recibo-dia').innerText = String(p.dia);
+                document.getElementById('recibo-mes').innerText = String(p.mes).padStart(2, '0');
+                document.getElementById('recibo-anio').innerText = String(p.anio).slice(-2);
+                document.getElementById('recibo-total').innerText = p.totalPagado;
+
+                const tbody = document.getElementById('recibo-tbody-items'); tbody.innerHTML = '';
+                tbody.innerHTML += `<tr><td>Pago por ${p.horasPagadas} horas trabajadas</td><td>$${p.plataHoras}</td></tr>`;
+                if(p.premios > 0) tbody.innerHTML += `<tr><td>Premios y Bonos extras</td><td>$${p.premios}</td></tr>`;
+                if(p.adelantosDescontados > 0) tbody.innerHTML += `<tr><td style="color:red;">Descuento por adelantos previos</td><td style="color:red;">-$${p.adelantosDescontados}</td></tr>`;
+                for(let i=0; i < 5; i++) { tbody.innerHTML += `<tr><td>&nbsp;</td><td></td></tr>`; }
+
+                elemento = document.getElementById('plantilla-recibo');
+                nombreArchivo = 'Recibo_Sueldo_' + p.nombreEmpleado.replace(/\s+/g, '_') + '.jpg';
+            }
+            else if(tipo === 'medidas') {
+                let m = window.medidasNube.find(x => x.docId === docId);
+                document.getElementById('med-cliente').innerText = m.cliente;
+                document.getElementById('med-dia').innerText = m.dia;
+                document.getElementById('med-mes').innerText = m.mes;
+                document.getElementById('med-anio').innerText = m.anio;
+                document.getElementById('med-foto').src = m.foto;
+                document.getElementById('med-notas').innerText = m.notas || 'Sin anotaciones adicionales.';
+
+                const tbody = document.getElementById('med-tbody-items'); tbody.innerHTML = '';
+                m.medidas.forEach(med => { tbody.innerHTML += `<tr><td>${med.detalle}</td><td>${med.valor}</td></tr>`; });
+
+                elemento = document.getElementById('plantilla-medidas');
+                nombreArchivo = 'Medidas_ConstruccionesMC_' + m.cliente.replace(/\s+/g, '_') + '.jpg';
+            }
+
+            elemento.style.display = 'block';
+            elemento.style.position = 'absolute';
+            elemento.style.top = window.scrollY + 'px'; 
+            elemento.style.left = '-9999px'; 
+
+            html2canvas(elemento, { scale: 2, useCORS: true }).then(canvas => {
+                canvas.toBlob(blob => {
+                    const file = new File([blob], nombreArchivo, { type: 'image/jpeg' });
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({ files: [file], title: 'Documento Construcciones MC' })
+                        .then(() => { elemento.style.display = 'none'; })
+                        .catch(err => { console.error('Error al compartir', err); elemento.style.display = 'none'; });
+                    } else {
+                        let enlace = document.createElement('a');
+                        enlace.download = nombreArchivo;
+                        enlace.href = URL.createObjectURL(blob);
+                        enlace.click();
+                        elemento.style.display = 'none'; 
+                    }
+                }, 'image/jpeg', 0.9);
+            });
+        };
+    </script>
+</body>
+</html>
