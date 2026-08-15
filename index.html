@@ -407,6 +407,32 @@
         };
 
         // --- SISTEMA EN TIEMPO REAL: AGENDA ---
+        window.guardarAgenda = async function() {
+            let tarea = document.getElementById('ag-tarea').value;
+            let direccion = document.getElementById('ag-direccion').value;
+            let costo = document.getElementById('ag-costo').value || 0;
+            let fecha = document.getElementById('ag-fecha').value;
+
+            if(!tarea || !fecha) {
+                alert("Por favor, ingresá al menos qué trabajo es y seleccioná una fecha.");
+                return;
+            }
+
+            // Guardamos en Firebase
+            await addDoc(collection(db, "agenda"), {
+                tarea: tarea,
+                direccion: direccion,
+                costo: parseFloat(costo),
+                fecha_iso: fecha // Importante para que se ordene bien por fecha
+            });
+
+            // Limpiamos los campos
+            document.getElementById('ag-tarea').value = '';
+            document.getElementById('ag-direccion').value = '';
+            document.getElementById('ag-costo').value = '';
+            document.getElementById('ag-fecha').value = '';
+        };
+
         const qAgenda = query(collection(db, "agenda"), orderBy("fecha_iso", "asc"));
         onSnapshot(qAgenda, (snapshot) => {
             let lista = document.getElementById('lista-agenda');
