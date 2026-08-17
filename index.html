@@ -79,7 +79,7 @@
         .agenda-datos p { font-size: 0.85rem; color: #64748b; margin-bottom: 3px; }
         .btn-listo { background-color: var(--verde); color: white; border: none; border-radius: 4px; padding: 5px 10px; font-weight: bold; cursor: pointer; align-self: flex-start; margin-top: 8px;}
 
-        /* HISTORIAL EMPLEADOS */
+        /* HISTORIAL EMPLEADOS Y CAJA */
         .historial-box { max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px; margin-bottom: 10px; background-color: #f8fafc; }
         .historial-item { display: flex; justify-content: space-between; align-items: center; padding: 5px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; color: var(--texto); }
         .historial-item:last-child { border-bottom: none; }
@@ -137,7 +137,16 @@
         </div>
         
         <button class="btn-principal" style="background-color: var(--verde); margin-top: 0; margin-bottom: 10px;" onclick="window.ingresoManual()">+ Ingreso de Dinero</button>
-        <button class="btn-reset" onclick="window.reiniciarCaja()">🔄 Reiniciar caja a cero</button>
+        <button class="btn-reset" onclick="window.reiniciarCaja()">🔄 Reiniciar contadores a cero</button>
+
+        <!-- NUEVO: LIBRO DIARIO DE CAJA -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px; margin-bottom: 5px;">
+            <h3 style="font-size: 1.1rem; color: var(--primario);">Libro Diario (Movimientos)</h3>
+            <button class="btn-reset" style="margin:0; color:#dc2626;" onclick="window.borrarTodoHistorialCaja()">🗑️ Borrar lista</button>
+        </div>
+        <div id="lista-movimientos-caja" class="historial-box" style="max-height: 250px; margin-bottom: 20px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <p style="text-align:center; color:#64748b; font-size:0.85rem; padding:10px;">Cargando movimientos...</p>
+        </div>
 
         <h2>Agenda de Obras</h2>
         <div class="tarjeta" style="background-color: #f8fafc; border: 1px dashed #cbd5e1;">
@@ -223,7 +232,7 @@
         <div id="lista-vehiculo"><div class="tarjeta"><p style="text-align: center;">Cargando historial...</p></div></div>
     </main>
 
-    <!-- PANTALLA 5: CATÁLOGO ANTES/DESPUÉS (NUEVO) -->
+    <!-- PANTALLA 5: CATÁLOGO ANTES/DESPUÉS -->
     <main id="panel-catalogo" class="pantalla">
         <h2>Catálogo de Obras</h2>
         <div class="tarjeta">
@@ -245,7 +254,7 @@
         <div id="lista-catalogo"><div class="tarjeta"><p style="text-align: center;">Cargando trabajos...</p></div></div>
     </main>
 
-    <!-- MENU INFERIOR (Modificado a 5 botones) -->
+    <!-- MENU INFERIOR -->
     <nav class="nav-inferior">
         <button class="nav-btn activa" onclick="window.cambiarPantalla('panel-dashboard', this)"><span class="icono">📊</span><span>Inicio</span></button>
         <button class="nav-btn" onclick="window.cambiarPantalla('panel-cotizaciones', this)"><span class="icono">📝</span><span>Cotizar</span></button>
@@ -355,7 +364,7 @@
         </div>
     </div>
 
-    <!-- PLANTILLA OCULTA: CATÁLOGO REDES SOCIALES (NUEVO) -->
+    <!-- PLANTILLA OCULTA: CATÁLOGO REDES SOCIALES -->
     <div id="plantilla-catalogo" class="plantilla-export" style="width: 600px; background-color: var(--fondo); color: var(--primario); padding: 0;">
         <div style="background-color: var(--primario); color: white; padding: 25px; text-align: center; border-bottom: 5px solid var(--acento);">
             <img src="logo.jpg.jpeg" alt="Logo Empresa" style="width: 100px; height: 100px; background: white; padding: 5px; border-radius: 12px; margin-bottom: 15px; object-fit: contain;">
@@ -364,7 +373,7 @@
         </div>
         <div style="padding: 25px; text-align: center;">
             <h2 id="cat-titulo" style="font-size: 28px; margin-bottom: 5px; color: var(--primario); border-bottom: none;">Nombre Obra</h2>
-            <p style="font-size: 18px; color: #64748b; margin-bottom: 25px; font-weight: bold;">⏱️ Tiempo de Obra: <span id="cat-plazo"></span></p>
+            <p style="font-size: 18px; color: #64748b; margin-bottom: 25px; font-weight: bold;">⏱️ Tiempo de ejecución: <span id="cat-plazo"></span></p>
             
             <div style="position: relative; margin-bottom: 20px;">
                 <span style="position: absolute; top: 15px; left: 15px; background: #dc2626; color: white; padding: 8px 15px; font-size: 16px; font-weight: bold; border-radius: 6px; z-index: 10;">ANTES</span>
@@ -404,7 +413,8 @@
         window.empleadosNube = [];
         window.itemsActuales = [];
         window.medidasNube = [];
-        window.catalogoNube = []; // Nuevo
+        window.catalogoNube = []; 
+        window.movimientosCajaNube = []; // Nuevo historial
 
         // --- SISTEMA EN TIEMPO REAL: CAJA (MONEDERO) ---
         const cajaRef = doc(db, "caja", "resumen");
@@ -431,12 +441,29 @@
             }
         };
 
+        // --- NUEVO: FUNCIÓN CENTRAL PARA REGISTRAR EN EL LIBRO DIARIO ---
+        window.registrarMovimientoCaja = async function(motivo, monto, tipo) {
+            let fObj = new Date();
+            let hora = String(fObj.getHours()).padStart(2, '0');
+            let min = String(fObj.getMinutes()).padStart(2, '0');
+            await addDoc(collection(db, "historial_caja"), {
+                motivo: motivo,
+                monto: monto,
+                tipo: tipo,
+                fecha: fObj.toLocaleDateString('es-UY') + ' ' + hora + ':' + min,
+                timestamp: Date.now()
+            });
+        };
+
         window.ingresoManual = async function() {
             let monto = parseFloat(prompt("¿Cuánta plata ingresó a la caja?"));
             if(!monto || isNaN(monto)) return;
             let detalle = prompt("¿Por qué concepto? (Ej: Seña obra)");
+            if(!detalle) detalle = "Ingreso manual (Sin especificar)";
+            
             await window.actualizarCaja('ingreso', monto);
-            alert(`Se sumaron $${monto} al monedero.`);
+            await window.registrarMovimientoCaja(detalle, monto, 'ingreso');
+            alert(`Se sumaron $${monto} al monedero y se guardó en el historial.`);
         };
 
         window.editarMonedero = async function() {
@@ -453,6 +480,45 @@
         window.reiniciarCaja = async function() {
             if(confirm("¿Estás seguro de reiniciar los contadores de la caja a cero? (Esto es ideal a principio de mes)")) {
                 await updateDoc(cajaRef, { ingresos: 0, gastos: 0, monedero: 0 });
+            }
+        };
+
+        // --- NUEVO: LECTOR DEL HISTORIAL DE CAJA EN TIEMPO REAL ---
+        const qHistorialCaja = query(collection(db, "historial_caja"), orderBy("timestamp", "desc"));
+        onSnapshot(qHistorialCaja, (snap) => {
+            let lista = document.getElementById('lista-movimientos-caja');
+            lista.innerHTML = '';
+            if(snap.empty) { lista.innerHTML = '<p style="text-align:center; color:#64748b; font-size:0.85rem; padding:10px;">No hay movimientos registrados todavía.</p>'; window.movimientosCajaNube = []; return; }
+            
+            window.movimientosCajaNube = [];
+            snap.forEach(docSnap => {
+                let m = docSnap.data(); m.docId = docSnap.id;
+                window.movimientosCajaNube.push(m);
+                let color = m.tipo === 'ingreso' ? 'var(--verde)' : '#dc2626';
+                let signo = m.tipo === 'ingreso' ? '+' : '-';
+                
+                let div = document.createElement('div');
+                div.className = 'historial-item';
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <p style="font-weight:bold; font-size:0.9rem; color:var(--primario); margin-bottom:2px;">${m.motivo}</p>
+                        <p style="font-size:0.75rem; color:#64748b;">${m.fecha}</p>
+                    </div>
+                    <div style="font-weight:bold; font-size:1.1rem; color:${color}; margin: 0 10px;">
+                        ${signo}$${m.monto}
+                    </div>
+                    <button class="btn-borrar-min" onclick="window.borrarDoc('${m.docId}', 'historial_caja')">❌</button>
+                `;
+                lista.appendChild(div);
+            });
+        });
+
+        window.borrarTodoHistorialCaja = async function() {
+            if(confirm("¿Estás seguro de borrar TODO el historial contable? (La plata de la billetera no cambiará, solo se borra la lista visual). Esto no se puede deshacer.")){
+                for(let m of window.movimientosCajaNube) {
+                    await deleteDoc(doc(db, "historial_caja", m.docId));
+                }
+                alert("Historial de movimientos limpio.");
             }
         };
 
@@ -623,7 +689,7 @@
             });
         });
 
-        // --- SISTEMA EN TIEMPO REAL: CATÁLOGO ANTES Y DESPUÉS (NUEVO) ---
+        // --- SISTEMA EN TIEMPO REAL: CATÁLOGO ANTES Y DESPUÉS ---
         window.fotoAntesBase64 = "";
         window.fotoDespuesBase64 = "";
 
@@ -805,6 +871,10 @@
             });
 
             await window.actualizarCaja('gasto', costo);
+            
+            // NUEVO: Registrar en historial
+            let movDetalle = entidad === 'flete' ? 'Flete: ' + detalle : 'Vehículo: ' + entidad + ' (' + detalle + ')';
+            await window.registrarMovimientoCaja(movDetalle, costo, 'gasto');
 
             document.getElementById('v-costo').value = ''; document.getElementById('v-km').value = ''; document.getElementById('v-detalle').value = '';
             alert("Gasto guardado y descontado de la caja correctamente.");
@@ -853,11 +923,15 @@
         });
 
         // --- SISTEMA EN TIEMPO REAL: PRESUPUESTOS Y COBRANZAS ---
-        window.cobrarPresupuesto = async function(docId, totalStr) {
+        window.cobrarPresupuesto = async function(docId, totalStr, clienteNombre) {
             let monto = parseFloat(totalStr);
-            if(confirm(`¿Marcar este trabajo como COBRADO?\n\nSe sumarán $${monto} automáticamente a la Caja (Ingresos y Monedero).`)) {
+            if(confirm(`¿Marcar este trabajo como COBRADO?\n\nSe sumarán $${monto} automáticamente a la Caja.`)) {
                 await window.actualizarCaja('ingreso', monto);
                 await updateDoc(doc(db, "presupuestos", docId), { cobrado: true });
+                
+                // NUEVO: Registrar en historial
+                await window.registrarMovimientoCaja('Cobro Obra: ' + clienteNombre, monto, 'ingreso');
+                
                 alert("Trabajo cobrado y dinero sumado a la caja.");
             }
         };
@@ -872,9 +946,10 @@
                 let p = docSnap.data(); p.docId = docSnap.id; window.presupuestosNube.push(p);
                 let div = document.createElement('div'); div.className = 'tarjeta';
                 
+                // NUEVO: Se le pasa p.cliente a cobrarPresupuesto
                 let btnCobro = p.cobrado ? 
                     `<span style="width:100%; text-align:center; color:var(--verde); font-weight:bold; padding:8px;">✅ Trabajo Cobrado</span>` : 
-                    `<button class="btn-accion btn-verde" onclick="window.cobrarPresupuesto('${p.docId}', '${p.total}')">Cobrar</button>`;
+                    `<button class="btn-accion btn-verde" onclick="window.cobrarPresupuesto('${p.docId}', '${p.total}', '${p.cliente}')">Cobrar</button>`;
 
                 div.innerHTML = `
                     <h3 style="margin-bottom: 2px;">${p.cliente}</h3>
@@ -1013,6 +1088,10 @@
 
                 let nuevoPago = await addDoc(collection(db, "pagos_salarios"), datosPago);
                 await window.actualizarCaja('gasto', saldo);
+                
+                // NUEVO: Registrar en historial
+                await window.registrarMovimientoCaja('Pago Sueldo: ' + e.nombre, saldo, 'gasto');
+
                 window.generarImagenYCompartir(nuevoPago.id, 'recibo', datosPago, e.valorHora); 
                 await updateDoc(doc(db, "empleados", docId), { horas: [], adelantos: [], premios: [] });
             }
@@ -1082,7 +1161,6 @@
                 elemento = document.getElementById('plantilla-medidas');
                 nombreArchivo = 'Medidas_ConstruccionesMC_' + m.cliente.replace(/\s+/g, '_') + '.jpg';
             }
-            // --- NUEVO: Exportar Catálogo para Redes Sociales ---
             else if(tipo === 'catalogo') {
                 let c = window.catalogoNube.find(x => x.docId === docId);
                 document.getElementById('cat-titulo').innerText = c.nombre;
